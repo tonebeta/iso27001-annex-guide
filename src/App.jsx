@@ -525,9 +525,7 @@ export default function App() {
               fontSize: "22px",
               fontWeight: 700,
               margin: 0,
-              background: t.titleGrad,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: t.accent,
               fontFamily: "'JetBrains Mono', monospace",
             }}>
               ISO 27001:2022
