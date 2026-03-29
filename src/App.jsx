@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+const loadExport = () => import("./export.js");
 
 const ROLES = [
   { id: "DIR", emoji: "👤", label: "DIR", full: "R&D Director / ISMS 管理代表", scope: "政策制定、管理審查、風險決策、對外聯繫、最終核准", suggest: "研發主管", color: "#6366f1" },
@@ -491,6 +492,32 @@ export default function App() {
   const roleMap = Object.fromEntries(ROLES.map(r => [r.id, r]));
   const freqMap = Object.fromEntries(FREQUENCIES.map(f => [f.id, f]));
 
+  const allExpanded = grouped.length > 0 && grouped.every(g => expandedControls.has(g.control));
+
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedControls(new Set());
+    } else {
+      setExpandedControls(new Set(grouped.map(g => g.control)));
+    }
+  };
+
+  const allVisibleChecked = filteredData.length > 0 && filteredData.every(i => checkedItems[i.id]);
+
+  const toggleAllVisible = () => {
+    if (allVisibleChecked && filteredData.length > 20) {
+      if (!window.confirm(`確定要取消勾選全部 ${filteredData.length} 個項目？`)) return;
+    }
+    setCheckedItems(prev => {
+      const next = { ...prev };
+      filteredData.forEach(i => {
+        if (allVisibleChecked) { delete next[i.id]; } else { next[i.id] = new Date().toISOString(); }
+      });
+      saveChecks(next);
+      return next;
+    });
+  };
+
   const toggleAllInControl = (controlKey) => {
     const items = grouped.find(g => g.control === controlKey)?.items || [];
     const allChecked = items.every(i => checkedItems[i.id]);
@@ -769,6 +796,66 @@ export default function App() {
           </button>
         )}
       </div>
+
+      {/* Toolbar */}
+      {grouped.length > 0 && (
+        <div style={{
+          padding: "10px 28px",
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          alignItems: "center",
+          borderBottom: `1px solid ${t.border}`,
+        }}>
+          <button onClick={toggleExpandAll} style={{
+            padding: "6px 14px",
+            borderRadius: "6px",
+            border: `1px solid ${t.borderMd}`,
+            background: t.surfaceAlt,
+            color: t.textTer,
+            cursor: "pointer",
+            fontSize: "12px",
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 500,
+          }}>
+            {allExpanded ? "▼ 收合全部" : "▶ 展開全部"}
+          </button>
+          <button onClick={toggleAllVisible} style={{
+            padding: "6px 14px",
+            borderRadius: "6px",
+            border: `1px solid ${allVisibleChecked ? "rgba(239,68,68,0.3)" : "rgba(74,222,128,0.3)"}`,
+            background: allVisibleChecked ? "rgba(239,68,68,0.08)" : "rgba(74,222,128,0.08)",
+            color: allVisibleChecked ? "#f87171" : "#4ade80",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 500,
+          }}>
+            {allVisibleChecked ? "✕ 取消全選" : "✓ 全選可見項目"} ({filteredData.filter(i => checkedItems[i.id]).length}/{filteredData.length})
+          </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+            {[
+              { label: "MD", fn: async () => { try { const m = await loadExport(); m.exportMarkdown(grouped, checkedItems, roleMap, freqMap); } catch { alert("匯出 Markdown 失敗，請重試。"); } } },
+              { label: "DOCX", fn: async () => { try { const m = await loadExport(); await m.exportDocx(grouped, checkedItems, roleMap, freqMap); } catch { alert("匯出 DOCX 失敗，請重試。"); } } },
+              { label: "XLSX", fn: async () => { try { const m = await loadExport(); await m.exportExcel(grouped, checkedItems, roleMap, freqMap); } catch { alert("匯出 Excel 失敗，請重試。"); } } },
+            ].map(exp => (
+              <button key={exp.label} onClick={exp.fn} style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: `1px solid ${t.borderMd}`,
+                background: t.surfaceAlt,
+                color: t.textTer,
+                cursor: "pointer",
+                fontSize: "11px",
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 500,
+              }}>
+                ↓ {exp.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Checklist */}
       <div style={{ padding: "16px 28px 60px" }}>

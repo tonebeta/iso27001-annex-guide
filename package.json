@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "docx": "^9.6.1",
+    "exceljs": "^4.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
