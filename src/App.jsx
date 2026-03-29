@@ -842,13 +842,13 @@ export default function App() {
               <button key={exp.label} onClick={exp.fn} style={{
                 padding: "6px 12px",
                 borderRadius: "6px",
-                border: `1px solid ${t.borderMd}`,
-                background: t.surfaceAlt,
-                color: t.textTer,
+                border: "1px solid rgba(59,130,246,0.3)",
+                background: "rgba(59,130,246,0.1)",
+                color: "#3b82f6",
                 cursor: "pointer",
                 fontSize: "11px",
                 fontFamily: "'JetBrains Mono', monospace",
-                fontWeight: 500,
+                fontWeight: 600,
               }}>
                 ↓ {exp.label}
               </button>
