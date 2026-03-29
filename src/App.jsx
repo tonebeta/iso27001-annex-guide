@@ -263,16 +263,16 @@ const CHECKLIST_DATA = [
 
 const FREQ_ORDER = { D: 0, W: 1, M: 2, Q: 3, S: 4, A: 5, E: 6 };
 
-function FilterChip({ active, onClick, children, color }) {
+function FilterChip({ active, onClick, children, color, t }) {
   return (
     <button
       onClick={onClick}
       style={{
         padding: "6px 14px",
         borderRadius: "20px",
-        border: active ? `2px solid ${color || "#a3e635"}` : "1px solid rgba(255,255,255,0.12)",
-        background: active ? `${color || "#a3e635"}18` : "rgba(255,255,255,0.04)",
-        color: active ? (color || "#a3e635") : "rgba(255,255,255,0.55)",
+        border: active ? `2px solid ${color || t.accent}` : `1px solid ${t.borderChip}`,
+        background: active ? `${color || t.accent}18` : t.surfaceAlt,
+        color: active ? (color || t.accent) : t.textSecAlt,
         cursor: "pointer",
         fontSize: "13px",
         fontWeight: active ? 600 : 400,
@@ -286,18 +286,58 @@ function FilterChip({ active, onClick, children, color }) {
   );
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, t }) {
   return (
     <div style={{
-      background: "rgba(255,255,255,0.03)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      background: t.surfaceCard,
+      border: `1px solid ${t.border}`,
       borderRadius: "10px",
       padding: "14px 18px",
       minWidth: "100px",
       textAlign: "center",
     }}>
       <div style={{ fontSize: "28px", fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
-      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+      <div style={{ fontSize: "11px", color: t.textTerAlt, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+    </div>
+  );
+}
+
+function ThemeToggle({ themeMode, setThemeMode, t }) {
+  const modes = [
+    { id: "system", label: "系統", icon: "💻" },
+    { id: "light", label: "淺色", icon: "☀️" },
+    { id: "dark", label: "深色", icon: "🌙" },
+  ];
+  return (
+    <div style={{
+      display: "inline-flex",
+      borderRadius: "8px",
+      border: `1px solid ${t.borderMd}`,
+      overflow: "hidden",
+    }}>
+      {modes.map(m => (
+        <button
+          key={m.id}
+          onClick={() => setThemeMode(m.id)}
+          style={{
+            padding: "5px 10px",
+            fontSize: "12px",
+            border: "none",
+            cursor: "pointer",
+            background: themeMode === m.id ? t.surfaceAlt : "transparent",
+            color: themeMode === m.id ? t.text : t.textFaint,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: themeMode === m.id ? 600 : 400,
+            transition: "all 0.2s",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <span style={{ fontSize: "14px" }}>{m.icon}</span>
+          <span>{m.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -311,6 +351,68 @@ export default function App() {
   const [searchText, setSearchText] = useState("");
   const [expandedControls, setExpandedControls] = useState(new Set());
   const [showRolePanel, setShowRolePanel] = useState(false);
+  const [themeMode, setThemeMode] = useState(() => {
+    try { return localStorage.getItem("iso27001-theme") || "system"; } catch { return "system"; }
+  });
+  const [systemDark, setSystemDark] = useState(() =>
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => setSystemDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("iso27001-theme", themeMode); } catch {}
+  }, [themeMode]);
+
+  const isDark = themeMode === "system" ? systemDark : themeMode === "dark";
+
+  useEffect(() => {
+    document.body.style.background = isDark ? "#0a0a0f" : "#f5f5f7";
+  }, [isDark]);
+
+  const t = useMemo(() => {
+    const d = isDark;
+    return {
+      bg: d ? "#0a0a0f" : "#f5f5f7",
+      text: d ? "#e4e4e7" : "#1a1a2e",
+      textHigh: d ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.85)",
+      textMed: d ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.8)",
+      textSec: d ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+      textSecAlt: d ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.6)",
+      textTer: d ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.55)",
+      textTerAlt: d ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)",
+      textMut: d ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.45)",
+      textMutAlt: d ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)",
+      textFaint: d ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.35)",
+      border: d ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+      borderLt: d ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)",
+      borderLt2: d ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.05)",
+      borderMd: d ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+      borderIn: d ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)",
+      borderChip: d ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)",
+      borderCb: d ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
+      surface: d ? "rgba(255,255,255,0.02)" : "#ffffff",
+      surfaceAlt: d ? "rgba(255,255,255,0.04)" : "#ffffff",
+      surfaceCard: d ? "rgba(255,255,255,0.03)" : "#ffffff",
+      surfacePanel: d ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)",
+      surfaceSub: d ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.015)",
+      headerGrad: d
+        ? "linear-gradient(180deg, rgba(163,230,53,0.03) 0%, transparent 100%)"
+        : "linear-gradient(180deg, rgba(163,230,53,0.08) 0%, transparent 100%)",
+      titleGrad: d
+        ? "linear-gradient(135deg, #a3e635, #4ade80)"
+        : "linear-gradient(135deg, #65a30d, #16a34a)",
+      accent: d ? "#a3e635" : "#65a30d",
+      checkedBg: d ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.1)",
+      checkedItemBg: d ? "rgba(74,222,128,0.03)" : "rgba(74,222,128,0.08)",
+      progressBg: d ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+    };
+  }, [isDark]);
 
   // Load checked state from localStorage
   useEffect(() => {
@@ -405,46 +507,49 @@ export default function App() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0a0a0f",
-      color: "#e4e4e7",
+      background: t.bg,
+      color: t.text,
       fontFamily: "'Noto Sans TC', 'Inter', sans-serif",
     }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* Header */}
       <div style={{
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: `1px solid ${t.border}`,
         padding: "24px 28px 20px",
-        background: "linear-gradient(180deg, rgba(163,230,53,0.03) 0%, transparent 100%)",
+        background: t.headerGrad,
       }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-          <h1 style={{
-            fontSize: "22px",
-            fontWeight: 700,
-            margin: 0,
-            background: "linear-gradient(135deg, #a3e635, #4ade80)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            ISO 27001:2022
-          </h1>
-          <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", fontWeight: 300 }}>Annex A 團隊日常作業檢核表</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <h1 style={{
+              fontSize: "22px",
+              fontWeight: 700,
+              margin: 0,
+              background: t.titleGrad,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              ISO 27001:2022
+            </h1>
+            <span style={{ fontSize: "14px", color: t.textMut, fontWeight: 300 }}>Annex A 團隊日常作業檢核表</span>
+          </div>
+          <ThemeToggle themeMode={themeMode} setThemeMode={setThemeMode} t={t} />
         </div>
 
         {/* Stats */}
         <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
-          <StatCard label="顯示項目" value={stats.total} color="#a3e635" />
-          <StatCard label="已完成" value={stats.checked} color="#4ade80" />
-          <StatCard label="完成率" value={stats.total ? `${Math.round(stats.checked / stats.total * 100)}%` : "—"} color={stats.total && stats.checked / stats.total > 0.8 ? "#4ade80" : "#f59e0b"} />
-          <StatCard label="待處理" value={stats.total - stats.checked} color="#f87171" />
+          <StatCard label="顯示項目" value={stats.total} color={t.accent} t={t} />
+          <StatCard label="已完成" value={stats.checked} color="#4ade80" t={t} />
+          <StatCard label="完成率" value={stats.total ? `${Math.round(stats.checked / stats.total * 100)}%` : "—"} color={stats.total && stats.checked / stats.total > 0.8 ? "#4ade80" : "#f59e0b"} t={t} />
+          <StatCard label="待處理" value={stats.total - stats.checked} color="#f87171" t={t} />
         </div>
       </div>
 
       {/* Role Reference Panel */}
       <div style={{
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(255,255,255,0.015)",
+        borderBottom: `1px solid ${t.border}`,
+        background: t.surfacePanel,
       }}>
         <button
           onClick={() => setShowRolePanel(!showRolePanel)}
@@ -456,7 +561,7 @@ export default function App() {
             gap: 8,
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.5)",
+            color: t.textTer,
             cursor: "pointer",
             fontSize: "13px",
             fontFamily: "'JetBrains Mono', monospace",
@@ -481,7 +586,7 @@ export default function App() {
               fontSize: "13px",
               borderRadius: "8px",
               overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: `1px solid ${t.borderMd}`,
             }}>
               <thead>
                 <tr>
@@ -489,13 +594,13 @@ export default function App() {
                     <th key={i} style={{
                       padding: "10px 14px",
                       textAlign: "left",
-                      background: "rgba(255,255,255,0.04)",
-                      color: "rgba(255,255,255,0.5)",
+                      background: t.surfaceAlt,
+                      color: t.textTer,
                       fontWeight: 600,
                       fontSize: "11px",
                       textTransform: "uppercase",
                       letterSpacing: "0.5px",
-                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                      borderBottom: `1px solid ${t.borderMd}`,
                       fontFamily: "'JetBrains Mono', monospace",
                       whiteSpace: "nowrap",
                     }}>{h}</th>
@@ -507,10 +612,10 @@ export default function App() {
                   const roleCount = filteredData.filter(i => i.role === r.id).length;
                   const roleChecked = filteredData.filter(i => i.role === r.id && checkedItems[i.id]).length;
                   return (
-                    <tr key={r.id} style={{ borderBottom: idx < ROLES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    <tr key={r.id} style={{ borderBottom: idx < ROLES.length - 1 ? `1px solid ${t.borderLt}` : "none" }}>
                       <td style={{
                         padding: "12px 14px",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        borderBottom: `1px solid ${t.borderLt}`,
                       }}>
                         <span style={{
                           display: "inline-flex",
@@ -530,28 +635,28 @@ export default function App() {
                       </td>
                       <td style={{
                         padding: "12px 14px",
-                        color: "rgba(255,255,255,0.85)",
+                        color: t.textHigh,
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        borderBottom: `1px solid ${t.borderLt}`,
                         whiteSpace: "nowrap",
                       }}>{r.full}</td>
                       <td style={{
                         padding: "12px 14px",
-                        color: "rgba(255,255,255,0.6)",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        color: t.textSec,
+                        borderBottom: `1px solid ${t.borderLt}`,
                         lineHeight: 1.5,
                         maxWidth: "300px",
                       }}>{r.scope}</td>
                       <td style={{
                         padding: "12px 14px",
-                        color: "rgba(255,255,255,0.5)",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        color: t.textTer,
+                        borderBottom: `1px solid ${t.borderLt}`,
                         fontStyle: "italic",
                         whiteSpace: "nowrap",
                       }}>{r.suggest}</td>
                       <td style={{
                         padding: "12px 14px",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        borderBottom: `1px solid ${t.borderLt}`,
                         fontFamily: "'JetBrains Mono', monospace",
                       }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -560,7 +665,7 @@ export default function App() {
                             width: 40,
                             height: 4,
                             borderRadius: 2,
-                            background: "rgba(255,255,255,0.08)",
+                            background: t.progressBg,
                             overflow: "hidden",
                           }}>
                             <div style={{
@@ -571,7 +676,7 @@ export default function App() {
                               transition: "width 0.3s",
                             }} />
                           </div>
-                          <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>{roleChecked}/{roleCount}</span>
+                          <span style={{ fontSize: "11px", color: t.textFaint }}>{roleChecked}/{roleCount}</span>
                         </div>
                       </td>
                     </tr>
@@ -586,8 +691,8 @@ export default function App() {
       {/* Filters */}
       <div style={{
         padding: "16px 28px",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(255,255,255,0.01)",
+        borderBottom: `1px solid ${t.border}`,
+        background: t.surfaceSub,
       }}>
         {/* Search */}
         <div style={{ marginBottom: 14 }}>
@@ -600,9 +705,9 @@ export default function App() {
               width: "100%",
               padding: "10px 16px",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.04)",
-              color: "#e4e4e7",
+              border: `1px solid ${t.borderIn}`,
+              background: t.surfaceAlt,
+              color: t.text,
               fontSize: "14px",
               outline: "none",
               fontFamily: "'Noto Sans TC', sans-serif",
@@ -613,10 +718,10 @@ export default function App() {
 
         {/* Role filters */}
         <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>角色</div>
+          <div style={{ fontSize: "11px", color: t.textMutAlt, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>角色</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {ROLES.map(r => (
-              <FilterChip key={r.id} active={selectedRoles.has(r.id)} onClick={() => toggleFilter(selectedRoles, setSelectedRoles, r.id)} color={r.color}>
+              <FilterChip key={r.id} active={selectedRoles.has(r.id)} onClick={() => toggleFilter(selectedRoles, setSelectedRoles, r.id)} color={r.color} t={t}>
                 {r.emoji} {r.label}
               </FilterChip>
             ))}
@@ -625,10 +730,10 @@ export default function App() {
 
         {/* Frequency filters */}
         <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>頻率</div>
+          <div style={{ fontSize: "11px", color: t.textMutAlt, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>頻率</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {FREQUENCIES.map(f => (
-              <FilterChip key={f.id} active={selectedFreqs.has(f.id)} onClick={() => toggleFilter(selectedFreqs, setSelectedFreqs, f.id)} color={f.color}>
+              <FilterChip key={f.id} active={selectedFreqs.has(f.id)} onClick={() => toggleFilter(selectedFreqs, setSelectedFreqs, f.id)} color={f.color} t={t}>
                 {f.emoji} {f.label}
               </FilterChip>
             ))}
@@ -637,14 +742,14 @@ export default function App() {
 
         {/* Section filters */}
         <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>控制域</div>
+          <div style={{ fontSize: "11px", color: t.textMutAlt, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}>控制域</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {SECTIONS.map(s => (
-              <FilterChip key={s.id} active={selectedSections.has(s.id)} onClick={() => toggleFilter(selectedSections, setSelectedSections, s.id)} color="#a3e635">
+              <FilterChip key={s.id} active={selectedSections.has(s.id)} onClick={() => toggleFilter(selectedSections, setSelectedSections, s.id)} color={t.accent} t={t}>
                 {s.label}
               </FilterChip>
             ))}
-            <FilterChip active={showNewOnly} onClick={() => setShowNewOnly(!showNewOnly)} color="#f472b6">
+            <FilterChip active={showNewOnly} onClick={() => setShowNewOnly(!showNewOnly)} color="#f472b6" t={t}>
               🆕 僅新增項目
             </FilterChip>
           </div>
@@ -670,7 +775,7 @@ export default function App() {
       {/* Checklist */}
       <div style={{ padding: "16px 28px 60px" }}>
         {grouped.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 60, color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ textAlign: "center", padding: 60, color: t.textFaint }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
             <div>沒有符合篩選條件的項目</div>
           </div>
@@ -684,8 +789,8 @@ export default function App() {
               <div key={group.control} style={{
                 marginBottom: 8,
                 borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(255,255,255,0.02)",
+                border: `1px solid ${t.border}`,
+                background: t.surface,
                 overflow: "hidden",
               }}>
                 {/* Control header */}
@@ -703,13 +808,13 @@ export default function App() {
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    background: allChecked ? "rgba(74,222,128,0.06)" : "transparent",
+                    background: allChecked ? t.checkedBg : "transparent",
                     transition: "background 0.2s",
                   }}
                 >
                   <span style={{
                     fontSize: "12px",
-                    color: "rgba(255,255,255,0.3)",
+                    color: t.textFaint,
                     transform: expandedControls.has(group.control) ? "rotate(90deg)" : "rotate(0deg)",
                     transition: "transform 0.2s",
                     fontFamily: "'JetBrains Mono', monospace",
@@ -719,7 +824,7 @@ export default function App() {
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: "#a3e635",
+                    color: t.accent,
                     minWidth: "52px",
                   }}>{group.control}</span>
 
@@ -734,7 +839,7 @@ export default function App() {
                       width: 50,
                       height: 4,
                       borderRadius: 2,
-                      background: "rgba(255,255,255,0.08)",
+                      background: t.progressBg,
                       overflow: "hidden",
                     }}>
                       <div style={{
@@ -747,7 +852,7 @@ export default function App() {
                     </div>
                     <span style={{
                       fontSize: "11px",
-                      color: "rgba(255,255,255,0.35)",
+                      color: t.textMutAlt,
                       fontFamily: "'JetBrains Mono', monospace",
                       minWidth: "30px",
                     }}>{checkedCount}/{group.items.length}</span>
@@ -756,7 +861,7 @@ export default function App() {
 
                 {/* Items */}
                 {expandedControls.has(group.control) && (
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                  <div style={{ borderTop: `1px solid ${t.borderLt}` }}>
                     {group.items.map(item => {
                       const role = roleMap[item.role];
                       const freq = freqMap[item.freq];
@@ -771,8 +876,8 @@ export default function App() {
                             alignItems: "flex-start",
                             gap: 10,
                             cursor: "pointer",
-                            borderBottom: "1px solid rgba(255,255,255,0.03)",
-                            background: isChecked ? "rgba(74,222,128,0.03)" : "transparent",
+                            borderBottom: `1px solid ${t.borderLt2}`,
+                            background: isChecked ? t.checkedItemBg : "transparent",
                             transition: "background 0.15s",
                           }}
                         >
@@ -781,7 +886,7 @@ export default function App() {
                             width: 18,
                             height: 18,
                             borderRadius: 4,
-                            border: isChecked ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,0.2)",
+                            border: isChecked ? "2px solid #4ade80" : `1.5px solid ${t.borderCb}`,
                             background: isChecked ? "#4ade8020" : "transparent",
                             display: "flex",
                             alignItems: "center",
@@ -827,7 +932,7 @@ export default function App() {
                           <span style={{
                             fontSize: "13px",
                             lineHeight: 1.5,
-                            color: isChecked ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.8)",
+                            color: isChecked ? t.textMutAlt : t.textMed,
                             textDecoration: isChecked ? "line-through" : "none",
                             transition: "all 0.15s",
                           }}>
@@ -843,7 +948,7 @@ export default function App() {
                         onClick={(e) => { e.stopPropagation(); toggleAllInControl(group.control); }}
                         style={{
                           fontSize: "11px",
-                          color: "rgba(255,255,255,0.3)",
+                          color: t.textFaint,
                           background: "none",
                           border: "none",
                           cursor: "pointer",
